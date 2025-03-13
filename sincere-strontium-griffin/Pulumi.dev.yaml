@@ -1,0 +1,4 @@
+config:
+  gcp:project: steameducation-b1b03
+  gcp:region: us-central1
+  sincere-strontium-griffin:nodesPerZone: "1"
