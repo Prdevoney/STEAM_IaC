@@ -3,6 +3,8 @@ import * as gcp from "@pulumi/gcp";
 import * as k8s from "@pulumi/kubernetes";
 import * as auto from "@pulumi/pulumi/automation";
 
+
+
 async function deployToGKE() {
     // Define the GKE cluster that we are going to deploy apps and services to 
 
