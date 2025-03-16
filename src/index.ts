@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi"; 
 import * as gcp from "@pulumi/gcp"; 
 import * as k8s from "@pulumi/kubernetes";
-import * as automation from "@pulumi/pulumi/automation";
+import * as auto from "@pulumi/pulumi/automation";
 
 async function deployToGKE() {
     // Define the GKE cluster that we are going to deploy apps and services to 
@@ -65,7 +65,7 @@ async function deployToGKE() {
                     spec: {
                         containers: [{
                             name: "steam-simulation-app",
-                            image: "gcr.io/steam-simulation/steam-simulation-app:latest",
+                            image: "us-docker.pkg.dev/google-samples/containers/gke/hello-app:1.0",
                             ports: [{ name: "http", containerPort: 8080 }],
                         }],
                     },
@@ -99,11 +99,19 @@ async function deployToGKE() {
 
 
     // Create or select a stack for managing this deployment
-    const stack = await automation.LocalWorkspace.createOrSelectStack({
+    const stack = await auto.LocalWorkspace.createOrSelectStack({
         stackName: "dev",
         projectName: "gke-deployment",
         program: pulumiProgram,
     });
 
+    // Deploy the stack
+    const result = await stack.up({ onOutput: console.log });
+    console.log(`Deployment succeeded: ${result.outputs.deploymentName}`);
+    console.log(`Service available at: http://${result.outputs.serviceEndpoint}`);
+}
 
-})(); 
+deployToGKE().catch(err => {
+    console.error("deployment failed:", err); 
+    process.exit(1); 
+});
