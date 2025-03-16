@@ -2,7 +2,39 @@ import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp"; 
 import * as k8s from "@pulumi/kubernetes";
 import * as auto from "@pulumi/pulumi/automation";
+import * as bodyParser from 'body-parser';
+import express, { Request, Response } from 'express';
 
+const app = express();
+const port = 8080;
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// simple status endpoint test 
+app.get('/status', (req: Request, res: Response) => {
+    res.json({ status: 'ok', message: 'Pulumi automation API is up and running!' });
+})
+
+
+app.post('/deploy', async (req: Request, res: Response) => {
+    try {
+        console.log('starting deployment...');
+        const result = await deployToGKE();
+        res.json({
+            success: true,
+            message: 'Deployment successful',
+            deploymentName: result.deploymentName,
+            serviceEndpoint: result.serviceEndpoint
+        });
+    } catch (error) {
+        console.error('Deployment failed:', error);
+        res.json({
+            success: false,
+            message: 'Deployment failed'
+        });
+    }
+});
 
 
 async function deployToGKE() {
@@ -111,9 +143,13 @@ async function deployToGKE() {
     const result = await stack.up({ onOutput: console.log });
     console.log(`Deployment succeeded: ${result.outputs.deploymentName}`);
     console.log(`Service available at: http://${result.outputs.serviceEndpoint}`);
+
+    return {
+        deploymentName: result.outputs.deploymentName,
+        serviceEndpoint: result.outputs.serviceIp 
+    };
 }
 
-deployToGKE().catch(err => {
-    console.error("deployment failed:", err); 
-    process.exit(1); 
-});
+app.listen(port, () => {
+    console.log(`Pulumi automation API listening at http://localhost:${port}`);
+})
