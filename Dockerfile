@@ -15,8 +15,16 @@ RUN apt-get updata && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Typescript and Express
-RUN npm install -g typescript express
+# Install Pulumi
+RUN curl -fsSL https://get.pulumi.com | sh
+
+# Install npm packages 
+RUN npm install -g \
+    typescript \
+    express \
+    @pulumi/kubernetes \
+    @pulumi/pulumi \
+    @pulumi/gcp 
 
 # Set working directory to app 
 WORKDIR /app 
