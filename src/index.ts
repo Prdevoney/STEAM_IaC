@@ -44,7 +44,7 @@ async function deployToGKE() {
 
         const cluster = await gcp.container.getCluster({
             name: "steam-simulation-cluster-1",
-            location: "us-central1-a",
+            location: "us-central1-c",
             project: "steameducation-b1b03"
         });
 
