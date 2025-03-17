@@ -61,3 +61,75 @@ users:
 const clusterProvider = new k8s.Provider(name, {
     kubeconfig: kubeconfig,
 });
+
+// Create a Kubernetes Namespace
+const ns = new k8s.core.v1.Namespace(name, {}, { provider: clusterProvider });
+
+// Export the Namespace name
+export const namespaceName = ns.metadata.apply(m => m.name);
+
+// Create a NGINX Deployment
+const appLabels = { appClass: name };
+const deployment = new k8s.apps.v1.Deployment(name,
+    {
+        metadata: {
+            namespace: namespaceName,
+            labels: appLabels,
+        },
+        spec: {
+            replicas: 1,
+            selector: { matchLabels: appLabels },
+            template: {
+                metadata: {
+                    labels: appLabels,
+                },
+                spec: {
+                    containers: [
+                        {
+                            name: name,
+                            image: "gcr.io/steameducation-b1b03/steam_images/gazebo_web_simulation@sha256:2be74a2fa44d543b4ebae2f1ff51aaed45f01d083a4ddb5ca30fedd57ef59c00",
+                            ports: [
+                                { name: "angular-port", containerPort: 4200 },
+                                { name: "api-port", containerPort: 9002 },
+                                { name: "web-port", containerPort: 8080 },
+                                { name: "backend-port", containerPort: 5000 }
+                            ]
+                        }
+                    ],
+                }
+            }
+        },
+    },
+    {
+        provider: clusterProvider,
+    }
+);
+
+// Export the Deployment name
+export const deploymentName = deployment.metadata.apply(m => m.name);
+
+// Create a LoadBalancer Service for the NGINX Deployment
+const service = new k8s.core.v1.Service(name,
+    {
+        metadata: {
+            labels: appLabels,
+            namespace: namespaceName,
+        },
+        spec: {
+            type: "LoadBalancer",
+            ports: [
+                { name: "angular", port: 80, targetPort: "angular-port" }, 
+                { name: "api", port: 70, targetPort: "api-port" }, 
+                { name: "web", port: 60, targetPort: "web-port" }, 
+                { name: "backend", port: 50, targetPort: "backend-port" }
+            ],            selector: appLabels,
+        },
+    },
+    {
+        provider: clusterProvider,
+    }
+);
+
+// Export the Service name and public LoadBalancer endpoint
+export const serviceName = service.metadata.apply(m => m.name);
+export const servicePublicIP = service.status.apply(s => s.loadBalancer.ingress[0].ip)
