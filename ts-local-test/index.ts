@@ -5,32 +5,45 @@ import * as gcp from "@pulumi/gcp";
 const name = "helloworld";
 
 // Create a GKE cluster
-const engineVersion = gcp.container.getEngineVersions().then(v => v.latestMasterVersion);
-const cluster = new gcp.container.Cluster(name, {
-    initialNodeCount: 2,
-    minMasterVersion: engineVersion,
-    nodeVersion: engineVersion,
-    nodeConfig: {
-        machineType: "n1-standard-1",
-        oauthScopes: [
-            "https://www.googleapis.com/auth/compute",
-            "https://www.googleapis.com/auth/devstorage.read_only",
-            "https://www.googleapis.com/auth/logging.write",
-            "https://www.googleapis.com/auth/monitoring"
-        ],
-    },
+// const engineVersion = gcp.container.getEngineVersions().then(v => v.latestMasterVersion);
+// const cluster = new gcp.container.Cluster(name, {
+//     initialNodeCount: 2,
+//     minMasterVersion: engineVersion,
+//     nodeVersion: engineVersion,
+//     nodeConfig: {
+//         machineType: "n1-standard-1",
+//         oauthScopes: [
+//             "https://www.googleapis.com/auth/compute",
+//             "https://www.googleapis.com/auth/devstorage.read_only",
+//             "https://www.googleapis.com/auth/logging.write",
+//             "https://www.googleapis.com/auth/monitoring"
+//         ],
+//     },
+// });
+
+// Get steam-simulation-cluster-1
+
+(async () => {
+
+const cluster = await gcp.container.getCluster({
+    name: "steam-simulation-cluster-1",
+    location: "us-central1-c",
+    project: "steameducation-b1b03"
 });
 
+
+
 // Export the Cluster name
-export const clusterName = cluster.name;
+// export const clusterName = cluster.name;
 
 // Manufacture a GKE-style kubeconfig. Note that this is slightly "different"
 // because of the way GKE requires gcloud to be in the picture for cluster
 // authentication (rather than using the client cert/key directly).
-export const kubeconfig = pulumi.
-    all([ cluster.name, cluster.endpoint, cluster.masterAuth ]).
-    apply(([ name, endpoint, masterAuth ]) => {
+const kubeconfig = pulumi.
+    all([ cluster.name, cluster.endpoint, cluster.masterAuths ]).
+    apply(([ name, endpoint, masterAuths ]) => {
         const context = `${gcp.config.project}_${gcp.config.zone}_${name}`;
+        const masterAuth = masterAuths[0];
         return `apiVersion: v1
 clusters:
 - cluster:
@@ -66,7 +79,7 @@ const clusterProvider = new k8s.Provider(name, {
 const ns = new k8s.core.v1.Namespace(name, {}, { provider: clusterProvider });
 
 // Export the Namespace name
-export const namespaceName = ns.metadata.apply(m => m.name);
+const namespaceName = ns.metadata.apply(m => m.name);
 
 // Create a NGINX Deployment
 const appLabels = { appClass: name };
@@ -106,7 +119,7 @@ const deployment = new k8s.apps.v1.Deployment(name,
 );
 
 // Export the Deployment name
-export const deploymentName = deployment.metadata.apply(m => m.name);
+const deploymentName = deployment.metadata.apply(m => m.name);
 
 // Create a LoadBalancer Service for the NGINX Deployment
 const service = new k8s.core.v1.Service(name,
@@ -131,5 +144,7 @@ const service = new k8s.core.v1.Service(name,
 );
 
 // Export the Service name and public LoadBalancer endpoint
-export const serviceName = service.metadata.apply(m => m.name);
-export const servicePublicIP = service.status.apply(s => s.loadBalancer.ingress[0].ip)
+const serviceName = service.metadata.apply(m => m.name);
+const servicePublicIP = service.status.apply(s => s.loadBalancer.ingress[0].ip)
+
+})(); 
