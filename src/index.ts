@@ -109,7 +109,7 @@ users:
         // Export the Deployment name
         const deploymentName = deployment.metadata.apply(m => m.name);
 
-        // Create a LoadBalancer Service for the NGINX Deployment
+        // Create a ClusterIP service for the Deployment
         const service = new k8s.core.v1.Service(name,
             {
                 metadata: {
@@ -131,9 +131,46 @@ users:
             }
         );
 
-
-        
-
+        // Create an HTTPRoute to route traffic to the Service
+        const httpRoute = new k8s.apiextensions.CustomResource(
+            `user-${userId}-route`,
+            {
+                apiVersion: "gateway.networking.k8s.io/v1beta1", 
+                kind: "HTTPRoute",
+                metadata: {
+                    namespace: namespaceName,
+                },
+                spec: {
+                    parentRefs: [
+                        {
+                            name: "user-gateway", // this references our STEAM gateway 
+                            namespace: namespaceName,
+                        }
+                    ],
+                    rules: [
+                        {
+                            matches: [
+                                {
+                                    path: {
+                                        type: "PathPrefix",
+                                        value: `/user/${userId}`,
+                                    },
+                                },
+                            ],
+                            backendRefs: [
+                                {
+                                    name: service.metadata.name,
+                                    port: 80, 
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                provider: clusterProvider,
+            }
+        );
 
         // Export the Service name and public LoadBalancer endpoint
         const serviceName = service.metadata.apply(m => m.name);
