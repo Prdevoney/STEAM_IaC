@@ -117,7 +117,7 @@ users:
                     namespace: namespaceName,
                 },
                 spec: {
-                    type: "LoadBalancer",
+                    type: "ClusterIP",
                     ports: [
                         { name: "angular", port: 80, targetPort: "angular-port" }, 
                         { name: "api", port: 70, targetPort: "api-port" }, 
@@ -130,6 +130,10 @@ users:
                 provider: clusterProvider,
             }
         );
+
+
+        
+
 
         // Export the Service name and public LoadBalancer endpoint
         const serviceName = service.metadata.apply(m => m.name);
@@ -147,7 +151,7 @@ users:
         try {
             // Set up Pulumi stack
             const projectName = "steam-simulation";
-            const stackName = req.body.stackName || "dev"; // Allow stack specification in request
+            const stackName = req.body.stackName;
             
             // Initialize the stack with automation API
             const stack = await auto.LocalWorkspace.createOrSelectStack({

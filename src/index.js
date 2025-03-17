@@ -171,7 +171,7 @@ app.post('/deploy', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         // Set up Pulumi stack
         const projectName = "steam-simulation";
-        const stackName = req.body.stackName || "dev"; // Allow stack specification in request
+        const stackName = req.body.stackName;
         // Initialize the stack with automation API
         const stack = yield auto.LocalWorkspace.createOrSelectStack({
             projectName,
