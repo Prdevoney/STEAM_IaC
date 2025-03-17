@@ -1,0 +1,3 @@
+config:
+  gcp:project: steameducation-b1b03
+  gcp:zone: us-central1-c
