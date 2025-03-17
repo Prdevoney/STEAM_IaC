@@ -22,6 +22,7 @@
   "homepage": "https://github.com/Prdevoney/STEAM_IaC#readme",
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.2"
   },
   "dependencies": {
