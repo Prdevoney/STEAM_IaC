@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const deploymentProgram = async () => {
     // Define the GKE cluster that we are going to deploy apps and services to 
-    const name = "helloworld";
+    const name = "steam-namespace";
 
     const cluster = await gcp.container.getCluster({
         name: "steam-simulation-cluster-1",
