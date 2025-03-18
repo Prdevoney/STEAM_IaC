@@ -55,9 +55,11 @@ const app = (0, express_1.default)();
 const port = 8080;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-const deploymentProgram = () => __awaiter(void 0, void 0, void 0, function* () {
+const deploymentProgram = (user_data) => __awaiter(void 0, void 0, void 0, function* () {
     // Define the GKE cluster that we are going to deploy apps and services to 
-    const name = "helloworld";
+    const user_id = user_data.user_id;
+    const name = `steam-simulation-${user_id}`;
+    const namespaceName = "steam-namespace";
     const cluster = yield gcp.container.getCluster({
         name: "steam-simulation-cluster-1",
         location: "us-central1-c",
@@ -100,10 +102,10 @@ users:
     const clusterProvider = new k8s.Provider(name, {
         kubeconfig: kubeconfig,
     });
-    // Create a Kubernetes Namespace
-    const ns = new k8s.core.v1.Namespace(name, {}, { provider: clusterProvider });
-    // Export the Namespace name
-    const namespaceName = ns.metadata.apply(m => m.name);
+    // // Create a Kubernetes Namespace
+    // const ns = new k8s.core.v1.Namespace(name, {}, { provider: clusterProvider });
+    // // Export the Namespace name
+    // const namespaceName = ns.metadata.apply(m => m.name);
     // Create a Deployment
     const appLabels = { appClass: name };
     const deployment = new k8s.apps.v1.Deployment(name, {
@@ -125,9 +127,9 @@ users:
                             image: "gcr.io/steameducation-b1b03/steam_images/gazebo_web_simulation@sha256:2be74a2fa44d543b4ebae2f1ff51aaed45f01d083a4ddb5ca30fedd57ef59c00",
                             ports: [
                                 { name: "angular-port", containerPort: 4200 },
-                                { name: "api-port", containerPort: 9002 },
+                                { name: "websocket-port", containerPort: 9002 },
+                                { name: "flask-app-port", containerPort: 5000 },
                                 { name: "web-port", containerPort: 8080 },
-                                { name: "backend-port", containerPort: 5000 }
                             ]
                         }
                     ],
@@ -139,21 +141,109 @@ users:
     });
     // Export the Deployment name
     const deploymentName = deployment.metadata.apply(m => m.name);
-    // Create a LoadBalancer Service for the NGINX Deployment
+    // Create a ClusterIP service for the Deployment
     const service = new k8s.core.v1.Service(name, {
         metadata: {
             labels: appLabels,
             namespace: namespaceName,
         },
         spec: {
-            type: "LoadBalancer",
+            type: "ClusterIP",
             ports: [
                 { name: "angular", port: 80, targetPort: "angular-port" },
-                { name: "api", port: 70, targetPort: "api-port" },
-                { name: "web", port: 60, targetPort: "web-port" },
-                { name: "backend", port: 50, targetPort: "backend-port" }
+                { name: "websocket", port: 70, targetPort: "websocket-port" },
+                { name: "flask", port: 60, targetPort: "flask-app-port" },
+                { name: "backend", port: 50, targetPort: "web-port" }
             ], selector: appLabels,
         },
+    }, {
+        provider: clusterProvider,
+    });
+    // Create an HTTPRoute to route traffic to the Service
+    const httpRoute = new k8s.apiextensions.CustomResource(`user-${user_id}-route`, {
+        apiVersion: "gateway.networking.k8s.io/v1beta1",
+        kind: "HTTPRoute",
+        metadata: {
+            namespace: namespaceName,
+        },
+        spec: {
+            parentRefs: [
+                {
+                    name: "steam-user-gateway", // this references our STEAM gateway 
+                    namespace: namespaceName,
+                }
+            ],
+            rules: [
+                {
+                    // RULE ONE: Route traffic to the Angular service
+                    matches: [
+                        {
+                            path: {
+                                type: "PathPrefix",
+                                value: `/user/${user_id}/angular`,
+                            },
+                        },
+                    ],
+                    backendRefs: [
+                        {
+                            name: service.metadata.name,
+                            port: 80, // Angular Port 
+                        }
+                    ]
+                },
+                {
+                    // RULE TWO: Route traffic to the Websocket service
+                    matches: [
+                        {
+                            path: {
+                                type: "PathPrefix",
+                                value: `/user/${user_id}/websocket`,
+                            }
+                        }
+                    ],
+                    backendRefs: [
+                        {
+                            name: service.metadata.name,
+                            port: 70, // Websocket Port
+                        }
+                    ]
+                },
+                {
+                    // RULE THREE: Route traffic to the Flask service
+                    matches: [
+                        {
+                            path: {
+                                type: "PathPrefix",
+                                value: `/user/${user_id}/flask`,
+                            }
+                        }
+                    ],
+                    backendRefs: [
+                        {
+                            name: service.metadata.name,
+                            port: 60, // Flask Port
+                        }
+                    ]
+                },
+                {
+                    // RULE FOUR: Route traffic to the Backend service
+                    matches: [
+                        {
+                            path: {
+                                type: "PathPrefix",
+                                value: `/user/${user_id}/backend`,
+                            }
+                        }
+                    ],
+                    backendRefs: [
+                        {
+                            name: service.metadata.name,
+                            port: 50, // Backend Port
+                        }
+                    ]
+                }
+            ]
+        }
     }, {
         provider: clusterProvider,
     });
@@ -171,13 +261,13 @@ app.post('/deploy', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         // Set up Pulumi stack
         const projectName = "steam-simulation";
-        const stackName = req.body.stackName;
+        const stackName = `user-stack${req.body.user_id}`;
         // Initialize the stack with automation API
         const stack = yield auto.LocalWorkspace.createOrSelectStack({
             projectName,
             stackName,
             // Specify our program directly
-            program: deploymentProgram,
+            program: () => deploymentProgram(req.body),
         });
         // Run update to deploy
         console.log("Starting deployment...");
