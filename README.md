@@ -1,7 +1,5 @@
 # STEAM_IaC
-This repository holds the code that will be hosted as a Cloud Run function on the GCP. The function will utilize the Pulumi Python library to manage the creation of Kubernetes services and pods on the Google Kubernetes Engine. 
-
-
+This repository holds the code that will be hosted as a Cloud Run function on the Google Cloud Platform (GCP). The function will utilize the Pulumi TypeScript library to manage the creation of Kubernetes services and pods on the Google Kubernetes Engine (GKE). This type of software is know as Infrastructure as Code (IaC). 
 
 ## IaC
 This is the TypeScript file in the /src directory. It is responsible for deploying our STEAM simulation images, creating the ClusterIP service linked to each deployment, 
