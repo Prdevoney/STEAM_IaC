@@ -154,6 +154,17 @@ users:
                                     },
                                 },
                             ],
+                            filters: [
+                                {
+                                    type: "URLRewrite",
+                                    urlRewrite: {
+                                        path: {
+                                            type: "ReplacePrefixMatch",
+                                            replacePrefixMatch: "/",
+                                        }
+                                    }
+                                }
+                            ],
                             backendRefs: [
                                 {
                                     name: service.metadata.name,

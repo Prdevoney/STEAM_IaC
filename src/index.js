@@ -102,10 +102,6 @@ users:
     const clusterProvider = new k8s.Provider(name, {
         kubeconfig: kubeconfig,
     });
-    // // Create a Kubernetes Namespace
-    // const ns = new k8s.core.v1.Namespace(name, {}, { provider: clusterProvider });
-    // // Export the Namespace name
-    // const namespaceName = ns.metadata.apply(m => m.name);
     // Create a Deployment
     const appLabels = { appClass: name };
     const deployment = new k8s.apps.v1.Deployment(name, {
@@ -184,6 +180,17 @@ users:
                             },
                         },
                     ],
+                    filters: [
+                        {
+                            type: "URLRewrite",
+                            urlRewrite: {
+                                path: {
+                                    type: "ReplacePrefixMatch",
+                                    replacePrefixMatch: "/",
+                                }
+                            }
+                        }
+                    ],
                     backendRefs: [
                         {
                             name: service.metadata.name,
@@ -249,12 +256,10 @@ users:
     });
     // Export the Service name and public LoadBalancer endpoint
     const serviceName = service.metadata.apply(m => m.name);
-    const servicePublicIP = service.status.apply(s => s.loadBalancer.ingress[0].ip);
     return {
         namespaceName,
         deploymentName,
         serviceName,
-        servicePublicIP,
     };
 });
 app.post('/deploy', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
