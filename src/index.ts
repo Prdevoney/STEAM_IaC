@@ -6,7 +6,7 @@ import * as bodyParser from 'body-parser';
 import express, { Request, Response } from 'express';
 
 const app = express();
-const port = 8080; 
+const port = 9090; 
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -145,11 +145,11 @@ users:
                     ],
                     rules: [
                         {
-                            // RULE ONE: Route traffic to the Angular service
+                            // RULE ONE: Route traffic to the Angular service (4200)
                             matches: [
                                 {
                                     path: {
-                                        type: "PathPrefix",
+                                        type: "Exact",
                                         value: `/user/${user_id}/angular`,
                                     },
                                 },
@@ -173,12 +173,41 @@ users:
                             ]
                         },
                         {
-                            // RULE TWO: Route traffic to the Websocket service
+                            // RULE ONE B: Route to static assets
+                            matches: [
+                                {
+                                    path: {
+                                        type: "PathPrefix",
+                                        value: `/user/${user_id}/assets`,
+                                    }
+                                }
+                            ],
+                            filters: [],
+                            backendRefs: [
+                                {
+                                    name: service.metadata.name,
+                                    port: 80, // Angular Port 
+                                }
+                            ]
+                        },
+                        {
+                            // RULE TWO: Route traffic to the Websocket service (9002)
                             matches: [
                                 {
                                     path: {
                                         type: "PathPrefix",
                                         value: `/user/${user_id}/websocket`,
+                                    }
+                                }
+                            ],
+                            filters: [
+                                {
+                                    type: "URLRewrite",
+                                    urlRewrite: {
+                                        path: {
+                                            type: "ReplacePrefixMatch",
+                                            replacePrefixMatch: "/",
+                                        }
                                     }
                                 }
                             ],
@@ -190,12 +219,23 @@ users:
                             ]
                         },
                         {
-                            // RULE THREE: Route traffic to the Flask service
+                            // RULE THREE: Route traffic to the Flask service (5000)
                             matches: [
                                 {
                                     path: {
                                         type: "PathPrefix",
                                         value: `/user/${user_id}/flask`,
+                                    }
+                                }
+                            ],
+                            filters: [
+                                {
+                                    type: "URLRewrite",
+                                    urlRewrite: {
+                                        path: {
+                                            type: "ReplacePrefixMatch",
+                                            replacePrefixMatch: "/",
+                                        }
                                     }
                                 }
                             ],
@@ -207,12 +247,23 @@ users:
                             ]
                         },
                         {
-                            // RULE FOUR: Route traffic to the Backend service
+                            // RULE FOUR: Route traffic to the Backend service (8080)
                             matches: [
                                 {
                                     path: {
                                         type: "PathPrefix",
                                         value: `/user/${user_id}/backend`,
+                                    }
+                                }
+                            ],
+                            filters: [
+                                {
+                                    type: "URLRewrite",
+                                    urlRewrite: {
+                                        path: {
+                                            type: "ReplacePrefixMatch",
+                                            replacePrefixMatch: "/",
+                                        }
                                     }
                                 }
                             ],
