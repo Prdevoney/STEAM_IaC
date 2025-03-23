@@ -85,10 +85,8 @@ users:
                                     name: name,
                                     image: "gcr.io/steameducation-b1b03/steam_images/gazebo_web_simulation@sha256:2be74a2fa44d543b4ebae2f1ff51aaed45f01d083a4ddb5ca30fedd57ef59c00",
                                     ports: [
-                                        { name: "angular-port", containerPort: 4200 },
-                                        { name: "websocket-port", containerPort: 9002 },
-                                        { name: "flask-app-port", containerPort: 5000 },
-                                        { name: "web-port", containerPort: 8080 },
+                                        { name: "simulation-websocket", containerPort: 9002 },
+                                        { name: "command-websocket", containerPort: 8002 },
                                     ]
                                 }
                             ],
@@ -115,10 +113,8 @@ users:
                 spec: {
                     type: "ClusterIP",
                     ports: [
-                        { name: "angular", port: 80, targetPort: "angular-port" }, 
-                        { name: "websocket", port: 70, targetPort: "websocket-port" }, 
-                        { name: "flask", port: 60, targetPort: "flask-app-port" }, 
-                        { name: "backend", port: 50, targetPort: "web-port" }
+                        { name: "simulation", port: 90, targetPort: "simulation-websocket" }, 
+                        { name: "command", port: 80, targetPort: "command-websocket" }, 
                     ],            selector: appLabels,
                 },
             },
@@ -145,58 +141,12 @@ users:
                     ],
                     rules: [
                         {
-                            // RULE ONE: Route traffic to the Angular service (4200)
-                            matches: [
-                                {
-                                    path: {
-                                        type: "Exact",
-                                        value: `/user/${user_id}/angular`,
-                                    },
-                                },
-                            ],
-                            filters: [
-                                {
-                                    type: "URLRewrite",
-                                    urlRewrite: {
-                                        path: {
-                                            type: "ReplacePrefixMatch",
-                                            replacePrefixMatch: "/",
-                                        }
-                                    }
-                                }
-                            ],
-                            backendRefs: [
-                                {
-                                    name: service.metadata.name,
-                                    port: 80, // Angular Port 
-                                }
-                            ]
-                        },
-                        {
-                            // RULE ONE B: Route to static assets
+                            // RULE ONE: Route traffic to the Ignition Gazebo Websocket (9002)
                             matches: [
                                 {
                                     path: {
                                         type: "PathPrefix",
-                                        value: `/user/${user_id}/assets`,
-                                    }
-                                }
-                            ],
-                            filters: [],
-                            backendRefs: [
-                                {
-                                    name: service.metadata.name,
-                                    port: 80, // Angular Port 
-                                }
-                            ]
-                        },
-                        {
-                            // RULE TWO: Route traffic to the Websocket service (9002)
-                            matches: [
-                                {
-                                    path: {
-                                        type: "PathPrefix",
-                                        value: `/user/${user_id}/websocket`,
+                                        value: `/user/${user_id}/simulation`,
                                     }
                                 }
                             ],
@@ -214,17 +164,17 @@ users:
                             backendRefs: [
                                 {
                                     name: service.metadata.name,
-                                    port: 70, // Websocket Port
+                                    port: 90, // Simulation websocket exposed on ClusterIP 9002
                                 }
                             ]
                         },
                         {
-                            // RULE THREE: Route traffic to the Flask service (5000)
+                            // RULE TWO: Route traffic to websocket that executes commands (8002)
                             matches: [
                                 {
                                     path: {
                                         type: "PathPrefix",
-                                        value: `/user/${user_id}/flask`,
+                                        value: `/user/${user_id}/command`,
                                     }
                                 }
                             ],
@@ -242,35 +192,7 @@ users:
                             backendRefs: [
                                 {
                                     name: service.metadata.name,
-                                    port: 60, // Flask Port
-                                }
-                            ]
-                        },
-                        {
-                            // RULE FOUR: Route traffic to the Backend service (8080)
-                            matches: [
-                                {
-                                    path: {
-                                        type: "PathPrefix",
-                                        value: `/user/${user_id}/backend`,
-                                    }
-                                }
-                            ],
-                            filters: [
-                                {
-                                    type: "URLRewrite",
-                                    urlRewrite: {
-                                        path: {
-                                            type: "ReplacePrefixMatch",
-                                            replacePrefixMatch: "/",
-                                        }
-                                    }
-                                }
-                            ],
-                            backendRefs: [
-                                {
-                                    name: service.metadata.name,
-                                    port: 50, // Backend Port
+                                    port: 80, // Command websocket exposed on ClusterIP 8002
                                 }
                             ]
                         }
@@ -282,7 +204,7 @@ users:
             }
         );
 
-        // Export the Service name and public LoadBalancer endpoint
+        // Export the Service 
         const serviceName = service.metadata.apply(m => m.name);
 
         return {
