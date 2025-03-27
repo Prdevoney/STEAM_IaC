@@ -11,12 +11,26 @@ const port = 9090;
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const imageMap: Record<string, string> = {
+    "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:202e9fd312666ab79400936e3d29395674f9d867bbc0e48831aa251492c2f6a4",
+    "mod2_ros_intro": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:88573e759454d17c55214e4fc3c163a1a29aecb371eaf92c6639e5508e3ec44c",
+    "mod3_robot_arm": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:10cedd0fb278053bbd1dce4789380007583553ec145dc40ae8b262a8cbcde8f6",
+    "mod4_tugbot": "",
+    "mod5_drone":"gcr.io/steameducation-b1b03/mod5_drone@sha256:ff05604b4e3d7babadb0a36ab7e30697727442ef80605f3c0f2310ec18d1708b", 
+}; 
+
+function getImage(key: string): string {
+    return imageMap[key] || ""; 
+}
 
 const deploymentProgram = async (user_data: any) => {
     // Define the GKE cluster that we are going to deploy apps and services to 
-    const user_id = user_data.user_id
-    const name = `steam-simulation-${user_id}`;
-    const namespaceName = "steam-namespace";
+    const user_id = user_data.user_id;
+    const name = `simulation-${user_id}`;
+    const namespace_name = "steam-namespace";
+    const module_name = user_data.module_id; 
+    const image = getImage(module_name); 
+    const gateway_name = "steam-user-gateway"; 
 
     const cluster = await gcp.container.getCluster({
         name: "steam-simulation-cluster-1",
@@ -69,7 +83,7 @@ users:
         const deployment = new k8s.apps.v1.Deployment(name,
             {
                 metadata: {
-                    namespace: namespaceName,
+                    namespace: namespace_name,
                     labels: appLabels,
                 },
                 spec: {
@@ -83,10 +97,10 @@ users:
                             containers: [
                                 {
                                     name: name,
-                                    image: "gcr.io/steameducation-b1b03/steam_images/gazebo_web_simulation@sha256:2be74a2fa44d543b4ebae2f1ff51aaed45f01d083a4ddb5ca30fedd57ef59c00",
+                                    image: image, // simulation image pulled from GCR
                                     ports: [
-                                        { name: "simulation-websocket", containerPort: 9002 },
-                                        { name: "command-websocket", containerPort: 8002 },
+                                        { name: "sim-websocket", containerPort: 9002 },
+                                        { name: "com-websocket", containerPort: 8002 },
                                     ]
                                 }
                             ],
@@ -108,13 +122,13 @@ users:
             {
                 metadata: {
                     labels: appLabels,
-                    namespace: namespaceName,
+                    namespace: namespace_name,
                 },
                 spec: {
                     type: "ClusterIP",
                     ports: [
-                        { name: "simulation", port: 90, targetPort: "simulation-websocket" }, 
-                        { name: "command", port: 80, targetPort: "command-websocket" }, 
+                        { name: "simulation", port: 92, targetPort: "sim-websocket" }, 
+                        { name: "command", port: 82, targetPort: "com-websocket" }, 
                     ],            selector: appLabels,
                 },
             },
@@ -125,18 +139,18 @@ users:
 
         // Create an HTTPRoute to route traffic to the Service
         const httpRoute = new k8s.apiextensions.CustomResource(
-            `user-${user_id}-route`,
+            `${user_id}-route`,
             {
                 apiVersion: "gateway.networking.k8s.io/v1beta1", 
                 kind: "HTTPRoute",
                 metadata: {
-                    namespace: namespaceName,
+                    namespace: namespace_name,
                 },
                 spec: {
                     parentRefs: [
                         {
-                            name: "steam-user-gateway", // this references our STEAM gateway 
-                            namespace: namespaceName,
+                            name: gateway_name, // this references our STEAM gateway 
+                            namespace: namespace_name,
                         }
                     ],
                     rules: [
@@ -146,7 +160,7 @@ users:
                                 {
                                     path: {
                                         type: "PathPrefix",
-                                        value: `/user/${user_id}/simulation`,
+                                        value: `/${user_id}/${module_name}/simulation`,
                                     }
                                 }
                             ],
@@ -164,7 +178,7 @@ users:
                             backendRefs: [
                                 {
                                     name: service.metadata.name,
-                                    port: 90, // Simulation websocket exposed on ClusterIP 9002
+                                    port: 92, // Simulation websocket exposed on ClusterIP 9002
                                 }
                             ]
                         },
@@ -174,7 +188,7 @@ users:
                                 {
                                     path: {
                                         type: "PathPrefix",
-                                        value: `/user/${user_id}/command`,
+                                        value: `/${user_id}/${module_name}/command`,
                                     }
                                 }
                             ],
@@ -192,7 +206,7 @@ users:
                             backendRefs: [
                                 {
                                     name: service.metadata.name,
-                                    port: 80, // Command websocket exposed on ClusterIP 8002
+                                    port: 82, // Command websocket exposed on ClusterIP 8002
                                 }
                             ]
                         }
@@ -208,7 +222,7 @@ users:
         const serviceName = service.metadata.apply(m => m.name);
 
         return {
-            namespaceName,
+            namespace_name,
             deploymentName,
             serviceName,
         };
@@ -218,13 +232,12 @@ users:
         try {
             // Set up Pulumi stack
             const projectName = "steam-simulation";
-            const stackName = `user-stack${req.body.user_id}`;
+            const stackName = `stack-${req.body.user_id}`;
             
             // Initialize the stack with automation API
             const stack = await auto.LocalWorkspace.createOrSelectStack({
                 projectName,
                 stackName,
-                // Specify our program directly
                 program: () => deploymentProgram(req.body),
             });
             // Run update to deploy
