@@ -13,6 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const imageMap: Record<string, string> = {
     "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:202e9fd312666ab79400936e3d29395674f9d867bbc0e48831aa251492c2f6a4",
+    "test_world_image_2": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad",
     "mod2_ros_intro": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:88573e759454d17c55214e4fc3c163a1a29aecb371eaf92c6639e5508e3ec44c",
     "mod3_robot_arm": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:10cedd0fb278053bbd1dce4789380007583553ec145dc40ae8b262a8cbcde8f6",
     "mod4_tugbot": "",
@@ -101,7 +102,8 @@ users:
                                     ports: [
                                         { name: "sim-websocket", containerPort: 9002 },
                                         { name: "com-websocket", containerPort: 8002 },
-                                    ]
+                                        { name: "health-check", containerPort: 7002 },
+                                    ],
                                 }
                             ],
                         }
@@ -129,7 +131,9 @@ users:
                     ports: [
                         { name: "simulation", port: 92, targetPort: "sim-websocket" }, 
                         { name: "command", port: 82, targetPort: "com-websocket" }, 
-                    ],            selector: appLabels,
+                        { name: "health", port: 72, targetPort: "health-check" },
+                    ],            
+                    selector: appLabels,
                 },
             },
             {
@@ -217,6 +221,44 @@ users:
                 provider: clusterProvider,
             }
         );
+
+        const healthCheckPolicy = new k8s.apiextensions.CustomResource(
+            `${user_id}-health-check-policy`,
+            {
+                apiVersion: "networking.gke.io/v1",
+                kind: "HealthCheckPolicy",
+                metadata: {
+                    namespace: namespace_name,
+                    name: `${user_id}-health-check`,
+                },
+                spec: {
+                    default: {
+                        checkIntervalSec: 5, 
+                        timeoutSec: 3, 
+                        healthyThreshold: 1, 
+                        unhealthyThreshold: 10, 
+                        config: {
+                            type: "HTTP",
+                            httpHealthCheck: {
+                                port: 72,
+                                requestPath: "/",
+                            },
+                        },
+                        logConfig: {
+                            enabled: true,
+                        }
+                    },
+                    targetRef: {
+                        group: "",
+                        kind: "Service",
+                        name: service.metadata.name,
+                    }
+                }
+            },
+            {
+                provider: clusterProvider,
+            }
+        ); 
 
         // Export the Service 
         const serviceName = service.metadata.apply(m => m.name);
