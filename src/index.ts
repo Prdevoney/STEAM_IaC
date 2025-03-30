@@ -130,7 +130,7 @@ users:
                     ports: [
                         { name: "simulation", port: 92, targetPort: "sim-websocket", protocol: "TCP", appProtocol: "kubernetes.io/ws" }, 
                         { name: "command", port: 82, targetPort: "com-websocket", protocol: "TCP", appProtocol: "kubernetes.io/ws" }, 
-                        { name: "health", port: 72, targetPort: "health-check" },
+                        { name: "health", port: 72, targetPort: "health-check" }, // May not be necessary to expose this port on the ClusterIP service 
                     ],            
                     selector: appLabels,
                 },
@@ -325,6 +325,50 @@ users:
                 status: "error",
                 message: "Deployment failed",
                 error: error.message,
+            });
+        }
+    });
+
+    // Add this endpoint after your /deploy endpoint
+    app.post('/destroy', async (req: Request, res: Response) => {
+        try {
+            // Get user_id from request body
+            const userId = req.body.user_id;
+            if (!userId) {
+                return res.status(400).json({
+                    status: "error",
+                    message: "Missing user_id in request body"
+                });
+            }
+
+            // Set up Pulumi stack
+            const projectName = "steam-simulation";
+            const stackName = `stack-${userId}`;
+            
+            console.log(`Attempting to destroy stack: ${stackName}`);
+            
+            // Initialize the stack with automation API
+            const stack = await auto.LocalWorkspace.selectStack({
+                projectName,
+                stackName,
+                program: () => deploymentProgram({ user_id: userId, module_id: '' }), // Empty module_id since we're just destroying
+            });
+
+            // Run destroy to remove all resources
+            console.log("Starting destruction...");
+            const destroyRes = await stack.destroy({ onOutput: console.log });
+
+            res.json({
+                status: "success",
+                message: `Stack ${stackName} destroyed successfully`,
+                summary: destroyRes.summary
+            });
+        } catch (error: any) {
+            console.error("Destruction failed:", error);
+            res.status(500).json({
+                status: "error",
+                message: "Destruction failed",
+                error: error.message
             });
         }
     });
