@@ -12,12 +12,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const imageMap: Record<string, string> = {
-    "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:202e9fd312666ab79400936e3d29395674f9d867bbc0e48831aa251492c2f6a4", // test_world_image
-    "test_world_image_2": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad", // test_world_image_2
-    "1LjViNIEB14XNArQtwaP": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:88573e759454d17c55214e4fc3c163a1a29aecb371eaf92c6639e5508e3ec44c", // mod2_ros_intro
-    "neOI52gdX1HInFQgE8Mp": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:10cedd0fb278053bbd1dce4789380007583553ec145dc40ae8b262a8cbcde8f6", // mod3_robot_arm
-    "bWSwj8u9RfeRd69jDkQ1": "", // mod4_tugbot
-    "hfQiob6b3V4WwvgcHyTf":"gcr.io/steameducation-b1b03/mod5_drone@sha256:ff05604b4e3d7babadb0a36ab7e30697727442ef80605f3c0f2310ec18d1708b", // mod5_drone
+    "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad", // test_world_image:v6
+    "1LjViNIEB14XNArQtwaP": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:33d1fb3c43449af7cebe7a3cc5838b279211642f4f5f21f13b048a3840f1b3fc", // mod2_ros_intro:v6
+    "neOI52gdX1HInFQgE8Mp": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:acd7ab8b972432cc5738a659143123ee6aa772128239667a98110ac1426f4c94", // mod3_robot_arm:v2
+    "bWSwj8u9RfeRd69jDkQ1": "gcr.io/steameducation-b1b03/mod4_tugbot@sha256:9c48a048be785f13c45ea2e8b401f3eaab07cf79666a2ce05e452dd0d739c46e", // mod4_tugbot:v1
+    "hfQiob6b3V4WwvgcHyTf":"gcr.io/steameducation-b1b03/mod5_drone@sha256:96cc05f3848c85c97dfbf2531a3e2677346a567c789ce28ed38a230458296d89", // mod5_drone:v4
 }; 
 
 function getImage(key: string): string {
