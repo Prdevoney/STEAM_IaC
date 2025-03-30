@@ -12,12 +12,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const imageMap: Record<string, string> = {
-    "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:202e9fd312666ab79400936e3d29395674f9d867bbc0e48831aa251492c2f6a4",
-    "test_world_image_2": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad",
-    "mod2_ros_intro": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:88573e759454d17c55214e4fc3c163a1a29aecb371eaf92c6639e5508e3ec44c",
-    "mod3_robot_arm": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:10cedd0fb278053bbd1dce4789380007583553ec145dc40ae8b262a8cbcde8f6",
-    "mod4_tugbot": "",
-    "mod5_drone":"gcr.io/steameducation-b1b03/mod5_drone@sha256:ff05604b4e3d7babadb0a36ab7e30697727442ef80605f3c0f2310ec18d1708b", 
+    "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:202e9fd312666ab79400936e3d29395674f9d867bbc0e48831aa251492c2f6a4", // test_world_image
+    "test_world_image_2": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad", // test_world_image_2
+    "1LjViNIEB14XNArQtwaP": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:88573e759454d17c55214e4fc3c163a1a29aecb371eaf92c6639e5508e3ec44c", // mod2_ros_intro
+    "neOI52gdX1HInFQgE8Mp": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:10cedd0fb278053bbd1dce4789380007583553ec145dc40ae8b262a8cbcde8f6", // mod3_robot_arm
+    "bWSwj8u9RfeRd69jDkQ1": "", // mod4_tugbot
+    "hfQiob6b3V4WwvgcHyTf":"gcr.io/steameducation-b1b03/mod5_drone@sha256:ff05604b4e3d7babadb0a36ab7e30697727442ef80605f3c0f2310ec18d1708b", // mod5_drone
 }; 
 
 function getImage(key: string): string {
@@ -129,8 +129,8 @@ users:
                 spec: {
                     type: "ClusterIP",
                     ports: [
-                        { name: "simulation", port: 92, targetPort: "sim-websocket" }, 
-                        { name: "command", port: 82, targetPort: "com-websocket" }, 
+                        { name: "simulation", port: 92, targetPort: "sim-websocket", protocol: "TCP", appProtocol: "kubernetes.io/ws" }, 
+                        { name: "command", port: 82, targetPort: "com-websocket", protocol: "TCP", appProtocol: "kubernetes.io/ws" }, 
                         { name: "health", port: 72, targetPort: "health-check" },
                     ],            
                     selector: appLabels,
@@ -204,7 +204,8 @@ users:
                                             type: "ReplacePrefixMatch",
                                             replacePrefixMatch: "/",
                                         }
-                                    }
+                                    },
+                                
                                 }
                             ],
                             backendRefs: [
@@ -212,8 +213,8 @@ users:
                                     name: service.metadata.name,
                                     port: 82, // Command websocket exposed on ClusterIP 8002
                                 }
-                            ]
-                        }
+                            ],
+                        },
                     ]
                 }
             },
@@ -233,20 +234,21 @@ users:
                 },
                 spec: {
                     default: {
-                        checkIntervalSec: 5, 
-                        timeoutSec: 3, 
+                        checkIntervalSec: 60, 
+                        timeoutSec: 55, 
                         healthyThreshold: 1, 
                         unhealthyThreshold: 10, 
+                        logConfig: {
+                            enabled: true,
+                        },
                         config: {
                             type: "HTTP",
                             httpHealthCheck: {
-                                port: 72,
+                                port: 7002,
                                 requestPath: "/",
                             },
                         },
-                        logConfig: {
-                            enabled: true,
-                        }
+                        
                     },
                     targetRef: {
                         group: "",
@@ -259,6 +261,32 @@ users:
                 provider: clusterProvider,
             }
         ); 
+
+        const backendPolicy = new k8s.apiextensions.CustomResource(
+            `${user_id}-backend-policy`,
+            {
+                apiVersion: "networking.gke.io/v1",
+                kind: "GCPBackendPolicy",
+                metadata: {
+                    namespace: namespace_name,
+                    name: `${user_id}-backend-policy`,
+                },
+                spec: {
+                    default: {
+                        timeoutSec: 3600,  // 1 hour
+                    },
+                    targetRef: {
+                        group: "",
+                        kind: "Service",
+                        name: service.metadata.name,
+                    }
+                }
+            },
+            {
+                provider: clusterProvider,
+            }
+        );
+
 
         // Export the Service 
         const serviceName = service.metadata.apply(m => m.name);
