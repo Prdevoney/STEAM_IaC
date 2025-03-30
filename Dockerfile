@@ -4,6 +4,9 @@ FROM ubuntu:22.04
 ENV NODE_VERSION=22.x
 ENV PORT=8080
 
+# Install dependencies
+RUN apt-get update && apt-get install -y curl gnupg2 lsb-release
+
 # Node.js Installation
 RUN apt-get update && apt-get install -y ca-certificates gnupg \
     && mkdir -p /etc/apt/keyrings \
@@ -15,14 +18,6 @@ RUN apt-get update && apt-get install -y ca-certificates gnupg \
 
 # Install Pulumi
 RUN curl -fsSL https://get.pulumi.com | sh
-
-# Install npm packages 
-RUN npm install -g \
-    typescript \
-    express \
-    @pulumi/kubernetes \
-    @pulumi/pulumi \
-    @pulumi/gcp 
 
 # Set working directory to app 
 WORKDIR /app 
