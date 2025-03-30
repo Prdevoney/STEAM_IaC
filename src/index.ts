@@ -317,7 +317,7 @@ users:
             res.json({
                 status: "success",
                 message: "Deployment successful",
-                outputs: upRes.outputs,
+                outputs: upRes.summary,
             });
         } catch (error: any) {
             console.error("Deployment failed:", error);
