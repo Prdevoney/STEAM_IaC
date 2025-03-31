@@ -329,6 +329,12 @@ users:
         }
     });
 
+    app.post('/test', async (req: Request, res: Response) => {
+        return res.json({
+            status: "success",
+        });
+    });
+
     // Add this endpoint after your /deploy endpoint
     app.post('/destroy', async (req: Request, res: Response) => {
         try {
