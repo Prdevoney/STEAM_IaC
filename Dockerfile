@@ -16,9 +16,12 @@ RUN apt-get update && apt-get install -y ca-certificates gnupg \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Pulumi
-RUN curl -fsSL https://get.pulumi.com | sh
-
+# Install Pulumi and add to PATH
+RUN curl -fsSL https://get.pulumi.com | sh && \
+    echo 'export PATH=$PATH:$HOME/.pulumi/bin' >> ~/.bashrc && \
+    echo 'export PATH=$PATH:$HOME/.pulumi/bin' >> ~/.profile && \
+    ln -s ~/.pulumi/bin/pulumi /usr/local/bin/pulumi
+    
 # Set working directory to app 
 WORKDIR /app 
 
