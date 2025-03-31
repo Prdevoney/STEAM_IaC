@@ -7,7 +7,7 @@ import express, { Request, Response } from 'express';
 
 const app = express();
 const port = 8080; 
-
+process.env.PULUMI_ACCESS_TOKEN = process.env.PULUMI_ACCESS_TOKEN || '';
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -329,10 +329,8 @@ users:
         }
     });
 
-    app.post('/test', async (req: Request, res: Response) => {
-        return res.json({
-            status: "success",
-        });
+    app.post('/', async (req: Request, res: Response) => {
+        res.status(200).send('service is running'); 
     });
 
     // Add this endpoint after your /deploy endpoint
