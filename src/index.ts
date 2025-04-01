@@ -4,12 +4,14 @@ import * as k8s from "@pulumi/kubernetes";
 import * as auto from "@pulumi/pulumi/automation";
 import * as bodyParser from 'body-parser';
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 
 const app = express();
 const port = 8080; 
 process.env.PULUMI_ACCESS_TOKEN = process.env.PULUMI_ACCESS_TOKEN || '';
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cors()); 
 
 const imageMap: Record<string, string> = {
     "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:66a34ee0cf15b71aebe245fb8abbff44768eeec39b3ad85c386ce4e55113c6ad", // test_world_image:v6
