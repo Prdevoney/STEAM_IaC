@@ -17,7 +17,7 @@ const imageMap: Record<string, string> = {
     "test_world_image": "gcr.io/steameducation-b1b03/test_world_image@sha256:0ef2580fd64a8d700b972184cacead0b7723c87533397dfb0ebfa992050dcc38", // test_world_image:v7
     "1LjViNIEB14XNArQtwaP": "gcr.io/steameducation-b1b03/mod2_ros_intro@sha256:07fc48d1379a0aa7e38b501951d867a5bd9f3c663dcb82498500f036ac1d5c05", // mod2_ros_intro:v7
     "neOI52gdX1HInFQgE8Mp": "gcr.io/steameducation-b1b03/mod3_robot_arm@sha256:ded6b397bcd9b8ff303009c5b5c49badde0b3a6c91b92f51589ab09fde3d30cc", // mod3_robot_arm:v3
-    "bWSwj8u9RfeRd69jDkQ1": "gcr.io/steameducation-b1b03/mod4_tugbot@sha256:2c63df6e2b7c35930f5c21d42e1f74f2b2e1ff15a91eec77d2a7ed6dfba3ac50", // mod4_tugbot:v2
+    "bWSwj8u9RfeRd69jDkQ1": "gcr.io/steameducation-b1b03/mod4_tugbot@sha256:10674ce0616c1626d2174ad26e9c0796205ab0ae50386e288800c080c36dbaa7", // mod4_tugbot:v3
     "hfQiob6b3V4WwvgcHyTf":"gcr.io/steameducation-b1b03/mod5_drone@sha256:1ca8b7b0e7d956adbc0c61cda727343081cd7f32c68474e32e9c113011d5ab48", // mod5_drone:v5
 }; 
 

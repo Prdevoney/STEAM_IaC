@@ -42,7 +42,7 @@ The stack associated with a user will destroy all the resources that it is track
 
 ### Permissions: 
 * **Pulumi:**
-    * To access your Pulumi when the IaC is hosted live you need to create a Pulumi access key. Then create an environment variable for you GCP Cloud Run function named PULUMI_ACCESS_KEY and insert your key. 
+    * To access your Pulumi when the IaC is hosted live you need to create a Pulumi access key from your Pulumi console. Then create an environment variable for you GCP Cloud Run function named PULUMI_ACCESS_KEY and insert your key. 
 
 * **GKE:** 
     * To access your GKE cluster when the IaC is hosted live you need to attach a service account to it with the proper permissions, all the permissions you need will relate to GKE. You can do that all in the GCP console. 
