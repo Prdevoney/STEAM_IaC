@@ -21,7 +21,7 @@ JSON
 }
 ```
 
-### Resources Created: 
+### GKE Resources Created: 
 1) **Workload Deployment:** <br>
 This is the actual container that can be found in the Workloads tab in the GKE. 
 2) **ClusterIP:** <br>
@@ -32,6 +32,20 @@ These are the routes that expose the websockets in a users container to the inte
 For a load balancer to route traffic to a service, the CluserIP, the endpoints in that service need to return a status of 200 when sent an HTTP request. Our app however consists of two websockets, which do not return a status of 200 when called successfully. To fix this we added a simple HTTP server to each container image and created the health check policy to route the checks to that endpoint and not the websockets. 
 5) **Backend Policy** <br> 
 When a loadbalancer sends traffic to an endpoint is has a timeout of 30 seconds, which is typical for HTTP requests. However our endpoints are websockets; so, we need a connection that lasts much longer than 30 seconds. The backend policy allows the connection to remain open for one hour. 
+
+### Pulumi Stacks: 
+1) **Pulumi Up** (deploy) <br>
+A Pulumi stack is created for each user, this tracks all the current resources on GKE that are associated with a user. A stack will only be created the first time a user accesses a simulation, after that the user's stack will merely be updated with new resources.
+
+2) **Pulumi Destory** (destroy) <br> 
+The stack associated with a user will destroy all the resources that it is tracking in the GKE cluster. It will not delete the stack, it will only destroy the GKE resources for that user. 
+
+### Permissions: 
+* **Pulumi:**
+    * To access your Pulumi when the IaC is hosted live you need to create a Pulumi access key. Then create an environment variable for you GCP Cloud Run function named PULUMI_ACCESS_KEY and insert your key. 
+
+* **GKE:** 
+    * To access your GKE cluster when the IaC is hosted live you need to attach a service account to it with the proper permissions, all the permissions you need will relate to GKE. You can do that all in the GCP console. 
 
 ## Gateway API
 The Gateway API is what allows us to route traffic from a user to their own isolated instance of the simulation we have running in the cloud for them. Here's the flow:<br> 
