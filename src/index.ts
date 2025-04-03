@@ -32,7 +32,7 @@ const deploymentProgram = async (user_data: any) => {
     const namespace_name = "steam-namespace";
     const module_name = user_data.module_id; 
     const image = getImage(module_name); 
-    const gateway_name = "steam-user-gateway"; 
+    const gateway_name = "steam-https-gateway"; 
 
     const cluster = await gcp.container.getCluster({
         name: "steam-simulation-cluster-1",
